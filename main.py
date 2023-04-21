@@ -1,42 +1,52 @@
-from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
-from argparse import ArgumentParser
-from pytorch_lightning import Trainer
-from core import BertNSP, STCDataModule
+from lightning.pytorch.callbacks import ModelCheckpoint
+from lightning.pytorch.loggers import WandbLogger
+from lightning.pytorch import Trainer
+from core import LLM
+from datacore.Foo.FooDatModule import FooDataModule as DataModule
+from lightning_colossalai import ColossalAIStrategy
+from lightning.pytorch.strategies import DeepSpeedStrategy
+import config
 
 if __name__ == "__main__":
-    parser = ArgumentParser()
-    parser = Trainer.add_argparse_args(parser)
-    parser.add_argument('--learning_rate', '-lr', type=float, default=5e-6)
-    parser.add_argument('--batch_size', '-bs', type=int, default=8)
-    args = parser.parse_args()
+    args = config.get_args()
+    print(args)
 
-    model = BertNSP(args)
-
-    best_checkpoint_callback = ModelCheckpoint(
+    model = LLM()
+    
+    training_checkpoint_callback = ModelCheckpoint(
         monitor='val_loss',
         filename='best',
         save_on_train_epoch_end=False,
-        save_top_k=1,
+        save_top_k=3,
     )
+    
+    
+    wandb_logger = WandbLogger(project=f"LLM-Training-{args.strategy}",log_model="all")
 
-    val_checkpoint_callback = ModelCheckpoint(
-        monitor='val_loss',
-        filename='val-epoch={epoch:02d}-setp={step}-val_loss={val_loss:.5f}',
-        save_last=True,
-        save_on_train_epoch_end=False,
-        save_top_k=3
-    )
-
-    early_stopping = EarlyStopping(
-        'val_loss',
-        mode='min',
-        patience=5,
-        check_on_train_epoch_end=False
-    )
-
-    trainer = Trainer.from_argparse_args(args, callbacks=[
-                                         best_checkpoint_callback, val_checkpoint_callback, early_stopping])
-    datamodule = STCDataModule(batch_size=args.batch_size)
-
+    trainer = None
+    
+    if args.strategy == 'deepspeed':
+        
+        # strategy = DeepSpeedStrategy(
+        #     stage=3,
+        #     cpu_checkpointing=True,
+        #     remote_device="cpu",
+        #     nvme_path="tmp",
+        #     partition_activations=True,
+        #     offload_optimizer=True,
+        #     offload_parameters=True,
+        #     offload_params_device="nvme",
+        #     offload_optimizer_device="nvme",
+        #     params_buffer_size=600000000
+        # )
+        # trainer = Trainer(accelerator="gpu",precision=16,callbacks=[training_checkpoint_callback],strategy=strategy,logger=wandb_logger)
+        
+        # deepspeed_stage_2_offload
+        trainer = Trainer(accelerator="gpu",precision=16,callbacks=[training_checkpoint_callback],strategy="deepspeed_stage_2_offload",logger=wandb_logger)
+    else:
+        strategy = ColossalAIStrategy(placement_policy="auto") # cpu|cuda|auto
+        trainer = Trainer(accelerator="gpu",precision=16,callbacks=[training_checkpoint_callback],strategy=strategy,logger=wandb_logger)
+    
+    datamodule = DataModule(batch_size=args.batch_size)
     trainer.fit(model, datamodule=datamodule)
-    trainer.test(ckpt_path='best', datamodule=datamodule)
+    

@@ -2,3 +2,7 @@
 *__pycache__*
 lightning_logs/
 .vscode/
+data/
+wandb
+wikipedia/
+tmp

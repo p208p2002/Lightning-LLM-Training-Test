@@ -1,2 +1,5 @@
+export CUDA_VISIBLE_DEVICES=0
+#  export CUDA_VISIBLE_DEVICES=0,1
 which python
-$(which python) main.py --batch_size 8 --accelerator gpu --devices 1 --max_epochs 2 -lr 3e-5 --val_check_interval 0.25
+$(which python) main.py -s deepspeed
+# $(which python) main.py

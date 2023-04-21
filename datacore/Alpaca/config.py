@@ -1,0 +1,3 @@
+INST = "[INST]"
+PROMPT = "[PROMPT]"
+OUTPUT = "[OUTPUT]"

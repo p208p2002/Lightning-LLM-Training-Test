@@ -1,6 +1,10 @@
 # Lightning LLM Training Test
-1. 硬體面測試高階消費級硬體能負荷的LLM
-2. 軟體面測試Lightning、DeepSpeed、Colossal與PEFT(LoRA)等整合和可用度
+消費級硬體LLM訓練測試
+
+## 訓練與優化策略
+- [DeepSpeed](https://www.deepspeed.ai/)
+- [Colossal AI](https://colossalai.org/)
+- [LoRA(PEFT)](https://github.com/huggingface/peft)
 
 ## 硬體環境
 |CPU|GPU|RAM|DISK|

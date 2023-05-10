@@ -1,6 +1,7 @@
 from argparse import ArgumentParser
 
-from model.gpt2_xl.get_instance import get_model,get_config,get_tokenizer
+from model.gpt2.get_instance import get_model,get_config,get_tokenizer
+# from model.gpt2_xl.get_instance import get_model,get_config,get_tokenizer
 # from model.gpt2_xl_lora.get_instance import get_model,get_config,get_tokenizer
 # from model.wz_gpt2_xxl.get_instance import get_model,get_config,get_tokenizer
 # from model.wz_gpt2_xxl_lora.get_instance import get_model,get_config,get_tokenizer

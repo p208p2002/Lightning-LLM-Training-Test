@@ -3,8 +3,6 @@ from lightning.pytorch.loggers import WandbLogger
 from lightning.pytorch import Trainer
 from core import LLM
 from datacore.Foo.FooDatModule import FooDataModule as DataModule
-from lightning_colossalai import ColossalAIStrategy
-from lightning.pytorch.strategies import DeepSpeedStrategy
 import config
 
 if __name__ == "__main__":
@@ -26,24 +24,10 @@ if __name__ == "__main__":
     trainer = None
     
     if args.strategy == 'deepspeed':
-        
-        # strategy = DeepSpeedStrategy(
-        #     stage=3,
-        #     cpu_checkpointing=True,
-        #     remote_device="cpu",
-        #     nvme_path="tmp",
-        #     partition_activations=True,
-        #     offload_optimizer=True,
-        #     offload_parameters=True,
-        #     offload_params_device="nvme",
-        #     offload_optimizer_device="nvme",
-        #     params_buffer_size=600000000
-        # )
-        # trainer = Trainer(accelerator="gpu",precision=16,callbacks=[training_checkpoint_callback],strategy=strategy,logger=wandb_logger)
-        
         # deepspeed_stage_2_offload
         trainer = Trainer(accelerator="gpu",precision=16,callbacks=[training_checkpoint_callback],strategy="deepspeed_stage_2_offload",logger=wandb_logger)
     else:
+        from lightning_colossalai import ColossalAIStrategy
         strategy = ColossalAIStrategy(placement_policy="auto") # cpu|cuda|auto
         trainer = Trainer(accelerator="gpu",precision=16,callbacks=[training_checkpoint_callback],strategy=strategy,logger=wandb_logger)
     

@@ -1,6 +1,6 @@
 import lightning.pytorch as pl
 import torch
-
+from deepspeed.profiling.flops_profiler import FlopsProfiler
 import time
 from typing import Any,Optional
 from config import get_model,get_tokenizer,get_config
@@ -29,9 +29,12 @@ class LLM(pl.LightningModule):
         self.config = get_config()
         self.model = get_model()
         self.model.resize_token_embeddings(len(self.tokenizer))
+        self.prof = FlopsProfiler(self.model)
+        
             
     def on_train_batch_start(self, batch: Any, batch_idx: int) -> Optional[int]:
         self._start = time.time()
+        self.prof.start_profile()
         return super().on_train_batch_start(batch, batch_idx)
 
     def on_train_batch_end(self, outputs, batch: Any, batch_idx: int) -> None:
@@ -42,12 +45,19 @@ class LLM(pl.LightningModule):
         token_count = seq_len*batch_size
         self._end = time.time()
         
+        flops = self.prof.get_total_flops()
+        latency = self.prof.get_total_duration()
+        self.log("TFLOP/s",round(flops/latency/(10**12),3),prog_bar=True)
+        # self.prof.print_model_profile()
+
+        self.prof.end_profile()
+        
         step_exec_time = self._end - self._start
         token_pre_sec = (token_count/step_exec_time)*self.device_num
-        self.log("tps",token_pre_sec,prog_bar=True)
+        self.log("TOKEN/s",token_pre_sec,prog_bar=True)
         
-        self.avg_tps += (token_pre_sec-self.avg_tps)/(self.global_step+1)
-        self.log("avg_tps",self.avg_tps,prog_bar=True)
+        # self.avg_tps += (token_pre_sec-self.avg_tps)/(self.global_step+1)
+        # self.log("avg_tps",self.avg_tps,prog_bar=True)
         
         return super().on_train_batch_end(outputs, batch, batch_idx)
     

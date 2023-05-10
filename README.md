@@ -7,7 +7,7 @@ LLM訓練測試 (記憶體使用量、實際算力與每秒鐘Token處理量)
 $$D = Token總數$$
 $$N = 模型參數量$$
 $$C=6DN$$
-$$T=\frac{C}{FLOPS*86400*10^{12}}$$
+$$T=C/(FLOPS*86400*10^{12})$$
 
 ## 最佳化模型參數量與資料集大小
 參見: [p208p2002/Compute-Optimal-Model-Estimator](https://github.com/p208p2002/Compute-Optimal-Model-Estimator)

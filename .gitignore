@@ -6,3 +6,4 @@ data/
 wandb
 wikipedia/
 tmp
+*_report.txt

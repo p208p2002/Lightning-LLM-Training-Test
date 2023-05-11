@@ -88,7 +88,8 @@ tflop/sec/total:{tflops_total}
 memory_usage:{memory_usage}
         """
         if batch_idx == (10 - 1):
-            with open("report.txt", "w", encoding="utf-8") as f:
+            save_prefix = config_args.model_name.replace("/","_")
+            with open(f"{save_prefix}_report.txt", "w", encoding="utf-8") as f:
                 # summary
                 f.write(
                     report_template.format_map(

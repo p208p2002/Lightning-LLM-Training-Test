@@ -1,9 +1,10 @@
 from torch.utils.data import Dataset
-
-from config import get_tokenizer,get_config
+from model.get_instance import get_tokenizer,get_config
+from config import get_args
 import torch
 
 MODEL_CONFIG = get_config()
+args = get_args()
 
 class FooDataset(Dataset):
     def __init__(self):
@@ -21,7 +22,7 @@ class FooDataset(Dataset):
 
     def __getitem__(self,index):
         
-        input_ids = torch.randint(1000,20000,(MODEL_CONFIG.n_positions,))
+        input_ids = torch.randint(1000,20000,(args.seq_length,))
         attention_mask = torch.ones_like(input_ids)
         return input_ids,attention_mask
     

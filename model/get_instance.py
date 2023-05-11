@@ -1,14 +1,15 @@
-from transformers import AutoTokenizer,BloomForCausalLM,BloomConfig
+from transformers import AutoTokenizer,AutoModelForCausalLM,AutoConfig
+from config import get_args,support_model
 
-MODEL_NAME = "bigscience/bloomz-3b"
+args = get_args()
+MODEL_NAME = args.model_name
 
 def get_config():
-    config = BloomConfig.from_pretrained(MODEL_NAME)
-    config.n_positions=512
+    config = AutoConfig.from_pretrained(MODEL_NAME)
     return config
 
 def get_model():
-    return BloomForCausalLM(get_config())
+    return support_model[MODEL_NAME](get_config())
 
 def get_tokenizer():
     if 'tokenizer' not in globals():

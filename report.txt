@@ -1,0 +1,11 @@
+
+MODEL:bigscience/bloom-560m
+MODEL_SIZE:559M
+GPU_COUNT:1
+tokens/sec/GPU:785.721
+tokens/sec/total:785.721
+tflop/sec/GPU:14.657
+tflop/sec/total:14.657
+memory_usage:13345MB
+        
+Device 0: NVIDIA GeForce RTX 3080, Memory(MB) : (3.93% free): 10240(total), 402 (free), 9837 (used)

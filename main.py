@@ -26,6 +26,7 @@ if __name__ == "__main__":
             precision=16,
             max_steps=10,
             strategy="deepspeed_stage_2_offload",
+            enable_checkpointing=False
         )
     else:
         from lightning_colossalai import ColossalAIStrategy
@@ -34,7 +35,8 @@ if __name__ == "__main__":
             accelerator="gpu",
             precision=16,
             max_steps=10,
-            strategy=strategy
+            strategy=strategy,
+            enable_checkpointing=False
         )
     
     datamodule = DataModule()

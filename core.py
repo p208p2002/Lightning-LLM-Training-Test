@@ -33,6 +33,8 @@ def count_parameters(model):
 
 
 class LLM(pl.LightningModule):
+    ram_usage = 0
+    vram_0_usage = 0
     device_num = torch.cuda.device_count()
     tokenizer = get_tokenizer()
 
@@ -73,7 +75,7 @@ class LLM(pl.LightningModule):
 
         # tokens
         step_exec_time = self._end - self._start
-        token_gpu = round(token_count / step_exec_time,3)
+        token_gpu = round(token_count / step_exec_time, 3)
         token_total = token_gpu * self.device_num
         self.log("tokens/sec/total", token_total, prog_bar=True)
 
@@ -85,10 +87,11 @@ tokens/sec/GPU:{token_gpu}
 tokens/sec/total:{token_total}
 tflop/sec/GPU:{tflops_gpu}
 tflop/sec/total:{tflops_total}
-memory_usage:{memory_usage}
+peak_ram:{peak_ram}
+peak_vram_0:{peak_vram_0}
         """
         if batch_idx == (10 - 1):
-            save_prefix = config_args.model_name.replace("/","_")
+            save_prefix = config_args.model_name.replace("/", "_")
             with open(f"{save_prefix}_report.txt", "w", encoding="utf-8") as f:
                 # summary
                 f.write(
@@ -101,27 +104,12 @@ memory_usage:{memory_usage}
                             "token_total": token_total,
                             "tflops_gpu": tflops_gpu,
                             "tflops_total": tflops_total,
-                            "memory_usage":f"{psutil.virtual_memory().used//(1024**2)}MB"
+                            "peak_ram": f"{self.ram_usage}MB",
+                            "peak_vram_0": f"{self.vram_0_usage}MB"
                         }
-                    )+"\n"
-                )
-                # gpu mem
-                nvidia_smi.nvmlInit()
-                deviceCount = nvidia_smi.nvmlDeviceGetCount()
-                for i in range(deviceCount):
-                    handle = nvidia_smi.nvmlDeviceGetHandleByIndex(i)
-                    info = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
-                    f.write("Device {}: {}, Memory(MB) : ({:.2f}% free): {}(total), {} (free), {} (used)\n"
-                        .format(
-                            i, 
-                            nvidia_smi.nvmlDeviceGetName(handle), 
-                            100*info.free/info.total, 
-                            info.total//(1024**2), 
-                            info.free//(1024**2), 
-                            info.used//(1024**2)
-                        )
                     )
-                nvidia_smi.nvmlShutdown()
+                    + "\n"
+                )
 
         return super().on_train_batch_end(outputs, batch, batch_idx)
 
@@ -136,6 +124,21 @@ memory_usage:{memory_usage}
         output = self.model(**encodings)
         loss = output["loss"]
         self.log("train_loss", loss)
+
+        # ram usage
+        ram_usage = psutil.virtual_memory().used // (1024**2)
+        if ram_usage > self.ram_usage:
+            self.ram_usage = ram_usage
+
+        # gpu mem
+        nvidia_smi.nvmlInit()
+        
+        handle = nvidia_smi.nvmlDeviceGetHandleByIndex(0)
+        info = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
+        vram_0_usage = info.used // (1024**2)
+        if vram_0_usage > self.vram_0_usage:
+            self.vram_0_usage = vram_0_usage
+        nvidia_smi.nvmlShutdown()
 
         return loss
 

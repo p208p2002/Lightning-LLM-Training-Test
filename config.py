@@ -1,6 +1,8 @@
 from argparse import ArgumentParser
 from transformers import GPT2LMHeadModel, BloomForCausalLM, LlamaForCausalLM
 
+DEEPSPEED_STRATEGY_STAGE_2 = "deepspeed_stage_2"
+DEEPSPEED_STRATEGY_STAGE_3 = "deepspeed_stage_3"
 DEEPSPEED_STRATEGY_STAGE_2_OFFLOAD = "deepspeed_stage_2_offload"
 DEEPSPEED_STRATEGY_STAGE_3_OFFLOAD = "deepspeed_stage_3_offload"
 
@@ -25,6 +27,8 @@ def get_args():
         "-s",
         default=DEEPSPEED_STRATEGY_STAGE_2_OFFLOAD,
         choices=[
+            DEEPSPEED_STRATEGY_STAGE_2,
+            DEEPSPEED_STRATEGY_STAGE_3,
             DEEPSPEED_STRATEGY_STAGE_2_OFFLOAD,
             DEEPSPEED_STRATEGY_STAGE_3_OFFLOAD,
         ],

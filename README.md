@@ -1,13 +1,16 @@
 # Lightning LLM Training Test
-LLM訓練測試 (記憶體使用量、實際算力與每秒鐘Token處理量)
+LLM訓練測試。記憶體使用量、實際算力(FLOP/s)與每秒鐘Token處理量。
 
 [![asciicast](https://asciinema.org/a/b62HS5z0hwGLTa1C7T7TfcRlr.svg)](https://asciinema.org/a/b62HS5z0hwGLTa1C7T7TfcRlr)
 
 ## 計算訓練時間
 $$D = Token總數$$
+
 $$N = 模型參數量$$
-$$C=6DN$$
-$$T_{days}=C/(FLOPS*86400*10^{12})$$
+
+$$C = 6DN$$
+
+$$T_{days} = C/(FLOPS \times 86400 \times 10^{12})$$
 
 ## 最佳化模型參數量與資料集大小
 參見: [p208p2002/Compute-Optimal-Model-Estimator](https://github.com/p208p2002/Compute-Optimal-Model-Estimator)

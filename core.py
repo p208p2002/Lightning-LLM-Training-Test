@@ -6,15 +6,12 @@ from typing import Any, Optional
 from model.get_instance import get_model, get_tokenizer, get_config
 import config
 import nvidia_smi
-import os, psutil
+import psutil
+import json
 
 
 config_args = config.get_args()
-if config_args.strategy == "deepspeed":
-    from deepspeed.ops.adam import DeepSpeedCPUAdam as Adam
-else:
-    from colossalai.nn.optimizer import CPUAdam as Adam
-
+from deepspeed.ops.adam import DeepSpeedCPUAdam as Adam
 from prettytable import PrettyTable
 
 
@@ -40,13 +37,8 @@ class LLM(pl.LightningModule):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        if config_args.strategy == "deepspeed":
-            self._init()
-
-    def configure_sharded_model(self):
-        if config_args.strategy == "colossal":
-            self._init()
-
+        self._init()
+            
     def _init(self):
         self.config = get_config()
         self.model = get_model()
@@ -80,6 +72,7 @@ class LLM(pl.LightningModule):
         self.log("tokens/sec/total", token_total, prog_bar=True)
 
         report_template = """
+args:{args}
 MODEL:{MODEL}
 MODEL_SIZE:{MODEL_SIZE}
 GPU_COUNT:{GPU_COUNT}
@@ -91,8 +84,8 @@ peak_ram:{peak_ram}
 peak_vram_0:{peak_vram_0}
         """
         if batch_idx == (10 - 1):
-            save_prefix = config_args.model_name.replace("/", "_")
-            with open(f"{save_prefix}_report.txt", "w", encoding="utf-8") as f:
+            # save_prefix = config_args.model_name.replace("/", "_")
+            with open(f"report.txt", "w", encoding="utf-8") as f:
                 # summary
                 f.write(
                     report_template.format_map(
@@ -105,7 +98,8 @@ peak_vram_0:{peak_vram_0}
                             "tflops_gpu": tflops_gpu,
                             "tflops_total": tflops_total,
                             "peak_ram": f"{self.ram_usage}MB",
-                            "peak_vram_0": f"{self.vram_0_usage}MB"
+                            "peak_vram_0": f"{self.vram_0_usage}MB",
+                            "args":f"{json.dumps(config_args.__dict__)}"
                         }
                     )
                     + "\n"

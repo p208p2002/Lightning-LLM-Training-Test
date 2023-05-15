@@ -1,7 +1,25 @@
 # Lightning LLM Training Test
-LLM訓練測試。記憶體使用量、實際算力(FLOP/s)與每秒鐘Token處理量。
+LLM硬體負載與吞吐量測試。
 
-[![asciicast](https://asciinema.org/a/b62HS5z0hwGLTa1C7T7TfcRlr.svg)](https://asciinema.org/a/b62HS5z0hwGLTa1C7T7TfcRlr)
+顯存使用量、記憶體使用量、實際算力(FLOP/s)與每秒鐘Token處理量。
+
+## 使用
+```bash
+usage: main.py [-h]
+               [--ds_strategy {deepspeed_stage_2,deepspeed_stage_3,deepspeed_stage_2_offload,deepspeed_stage_3_offload}]
+               [--learning_rate LEARNING_RATE] [--batch_size BATCH_SIZE] [--seq_length SEQ_LENGTH]
+               [--model_name {gpt2,gpt2-medium,gpt2-large,gpt2-xl,bigscience/bloom-560m,bigscience/bloom-1b1,bigscience/bloom-1b7,bigscience/bloom-3b,bigscience/bloom-7b1,bigscience/bloom}]
+
+options:
+  -h, --help            show this help message and exit
+  --ds_strategy {deepspeed_stage_2,deepspeed_stage_3,deepspeed_stage_2_offload,deepspeed_stage_3_offload}, -s {deepspeed_stage_2,deepspeed_stage_3,deepspeed_stage_2_offload,deepspeed_stage_3_offload}
+  --learning_rate LEARNING_RATE, -lr LEARNING_RATE
+  --batch_size BATCH_SIZE, -B BATCH_SIZE
+  --seq_length SEQ_LENGTH, -L SEQ_LENGTH
+  --model_name {gpt2,gpt2-medium,gpt2-large,gpt2-xl,bigscience/bloom-560m,bigscience/bloom-1b1,bigscience/bloom-1b7,bigscience/bloom-3b,bigscience/bloom-7b1,bigscience/bloom}, -M {gpt2,gpt2-medium,gpt2-large,gpt2-xl,bigscience/bloom-560m,bigscience/bloom-1b1,bigscience/bloom-1b7,bigscience/bloom-3b,bigscience/bloom-7b1,bigscience/bloom}
+```
+
+程式會在執行10個step後自動結束，並將結果紀錄到`report.txt`
 
 ## 計算訓練時間
 $$D = Token總數$$
@@ -15,59 +33,3 @@ $$T_{days} = C/(FLOPS \times 86400 \times 10^{12})$$
 ## 最佳化模型參數量與資料集大小
 參見: [p208p2002/Compute-Optimal-Model-Estimator](https://github.com/p208p2002/Compute-Optimal-Model-Estimator)
 > 若已知實際算力，則`utilization=1`，或使用經驗值0.2~0.3。
-
-## 訓練與優化策略
-- [DeepSpeed](https://www.deepspeed.ai/)
-- [Colossal AI](https://colossalai.org/)
-- [LoRA(PEFT)](https://github.com/huggingface/peft)
-
-## 硬體環境
-|CPU|GPU|RAM|DISK|
-|---|---|---|---|
-|i7-12700|3090ti(24GB)*1|128GB|12TB Hybrid Drive|
-
-## 重點套件版本
-- torch==1.13.1+cu116
-- transformers==4.24.0
-- deepspeed==0.8.3
-- colossalai==0.2.8
-- lightning==2.0.1
-- lightning-colossalai==0.1.0
-
-## 測試報告
-### DeepSpeed 
-|全調參             |GPT 1.5B|WZ-GPT 3.5B|BLOOM 3B|BLOOM 7B|
-|------------------|:------:|:---------:|:------:|:------:|
-|Offload           |✔       |✔          |✔       |CUDA_OOM|
-|Offload + Infinity|✔       |✔          |✔       |不穩定   |
-
-|LoRA              |GPT 1.5B|WZ-GPT 3.5B|BLOOM 3B|BLOOM 7B|
-|------------------|:------:|:---------:|:------:|:------:|
-|Offload           |✔       |✔          |✔       |CUDA_OOM|
-|Offload + Infinity|✔       |✔          |✔       |✔       |
-
-
-### Colossal
-|全調參             |GPT 1.5B|WZ-GPT 3.5B|BLOOM 3B|BLOOM 7B|
-|------------------|:------:|:---------:|:------:|:------:|
-|Default           |✔       |✔          |✔       |RAM_OOM |
-
-
-|LoRA            |GPT 1.5B|WZ-GPT 3.5B|BLOOM 3B|BLOOM 7B|
-|----------------|:------:|:---------:|:------:|:------:|
-|Default         |Error     |Error    |Error   |Error   |
-
-## Usage
-### Environment Setup
-```bash
-poetry install --with dev
-poetry run poe setup-env
-```
-### Activate Environment
-```bash
-poetry shell
-```
-### Deactivate Environment
-```bash
-deactivate
-```

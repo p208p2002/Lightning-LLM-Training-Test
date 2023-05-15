@@ -1,8 +1,10 @@
 from argparse import ArgumentParser
 from transformers import GPT2LMHeadModel, BloomForCausalLM, LlamaForCausalLM
 
+DEEPSPEED_STRATEGY_STAGE_1 = "deepspeed_stage_1"
 DEEPSPEED_STRATEGY_STAGE_2 = "deepspeed_stage_2"
 DEEPSPEED_STRATEGY_STAGE_3 = "deepspeed_stage_3"
+DEEPSPEED_STRATEGY_STAGE_1_OFFLOAD = "deepspeed_stage_1_offload"
 DEEPSPEED_STRATEGY_STAGE_2_OFFLOAD = "deepspeed_stage_2_offload"
 DEEPSPEED_STRATEGY_STAGE_3_OFFLOAD = "deepspeed_stage_3_offload"
 
@@ -17,6 +19,10 @@ support_model = {
     "bigscience/bloom-3b": BloomForCausalLM,
     "bigscience/bloom-7b1": BloomForCausalLM,
     "bigscience/bloom": BloomForCausalLM,
+    "huggyllama/llama-7b":LlamaForCausalLM,
+    "huggyllama/llama-13b":LlamaForCausalLM,
+    "huggyllama/llama-30b":LlamaForCausalLM,
+    "huggyllama/llama-65b":LlamaForCausalLM
 }
 
 
@@ -27,8 +33,10 @@ def get_args():
         "-s",
         default=DEEPSPEED_STRATEGY_STAGE_2_OFFLOAD,
         choices=[
+            DEEPSPEED_STRATEGY_STAGE_1,
             DEEPSPEED_STRATEGY_STAGE_2,
             DEEPSPEED_STRATEGY_STAGE_3,
+            DEEPSPEED_STRATEGY_STAGE_1_OFFLOAD,
             DEEPSPEED_STRATEGY_STAGE_2_OFFLOAD,
             DEEPSPEED_STRATEGY_STAGE_3_OFFLOAD,
         ],

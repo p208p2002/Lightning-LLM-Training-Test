@@ -9,11 +9,22 @@ import nvidia_smi
 import psutil
 import json
 
-
 config_args = config.get_args()
 from deepspeed.ops.adam import DeepSpeedCPUAdam as Adam
 from prettytable import PrettyTable
 
+REPORT_TEMPLATE = """
+args:{args}
+MODEL:{MODEL}
+MODEL_SIZE:{MODEL_SIZE}
+GPU_COUNT:{GPU_COUNT}
+tokens/sec/GPU:{token_gpu}
+tokens/sec/total:{token_total}
+tflop/sec/GPU:{tflops_gpu}
+tflop/sec/total:{tflops_total}
+peak_ram:{peak_ram}
+peak_vram_0:{peak_vram_0}
+"""
 
 def count_parameters(model):
     table = PrettyTable(["Modules", "Parameters"])
@@ -30,6 +41,7 @@ def count_parameters(model):
 
 
 class LLM(pl.LightningModule):
+    report = ""
     ram_usage = 0
     vram_0_usage = 0
     device_num = torch.cuda.device_count()
@@ -38,7 +50,7 @@ class LLM(pl.LightningModule):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self._init()
-            
+
     def _init(self):
         self.config = get_config()
         self.model = get_model()
@@ -71,41 +83,30 @@ class LLM(pl.LightningModule):
         token_total = token_gpu * self.device_num
         self.log("tokens/sec/total", token_total, prog_bar=True)
 
-        report_template = """
-args:{args}
-MODEL:{MODEL}
-MODEL_SIZE:{MODEL_SIZE}
-GPU_COUNT:{GPU_COUNT}
-tokens/sec/GPU:{token_gpu}
-tokens/sec/total:{token_total}
-tflop/sec/GPU:{tflops_gpu}
-tflop/sec/total:{tflops_total}
-peak_ram:{peak_ram}
-peak_vram_0:{peak_vram_0}
-        """
         if batch_idx == (10 - 1):
             # save_prefix = config_args.model_name.replace("/", "_")
             with open(f"report.txt", "w", encoding="utf-8") as f:
                 # summary
-                f.write(
-                    report_template.format_map(
-                        {
-                            "MODEL": config_args.model_name,
-                            "MODEL_SIZE": f"{count_parameters(self.model)//(10**6)}M",
-                            "GPU_COUNT": self.device_num,
-                            "token_gpu": token_gpu,
-                            "token_total": token_total,
-                            "tflops_gpu": tflops_gpu,
-                            "tflops_total": tflops_total,
-                            "peak_ram": f"{self.ram_usage}MB",
-                            "peak_vram_0": f"{self.vram_0_usage}MB",
-                            "args":f"{json.dumps(config_args.__dict__)}"
-                        }
-                    )
-                    + "\n"
+                self.report = REPORT_TEMPLATE.format_map(
+                    {
+                        "MODEL": config_args.model_name,
+                        "MODEL_SIZE": f"{count_parameters(self.model)//(10**6)}M",
+                        "GPU_COUNT": self.device_num,
+                        "token_gpu": token_gpu,
+                        "token_total": token_total,
+                        "tflops_gpu": tflops_gpu,
+                        "tflops_total": tflops_total,
+                        "peak_ram": f"{self.ram_usage}MB",
+                        "peak_vram_0": f"{self.vram_0_usage}MB",
+                        "args": f"{json.dumps(config_args.__dict__)}",
+                    }
                 )
-
+                f.write(self.report + "\n")
+                
         return super().on_train_batch_end(outputs, batch, batch_idx)
+
+    def on_fit_end(self):
+        print(self.report)
 
     def training_step(self, batch, batch_idx):
         #
@@ -126,7 +127,7 @@ peak_vram_0:{peak_vram_0}
 
         # gpu mem
         nvidia_smi.nvmlInit()
-        
+
         handle = nvidia_smi.nvmlDeviceGetHandleByIndex(0)
         info = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
         vram_0_usage = info.used // (1024**2)

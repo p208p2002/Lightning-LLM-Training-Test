@@ -44,6 +44,12 @@ def get_args():
     parser.add_argument("--learning_rate", "-lr", type=float, default=2e-5)
     parser.add_argument("--batch_size", "-B", type=int, default=1)
     parser.add_argument("--seq_length", "-L", type=int, default=512)
+    parser.add_argument("--precision", "-p", type=str, default="16-mixed",choices=[
+        "16","32","64",
+        "bf-16",
+        "16-mixed", "bf16-mixed", 
+        "32-true", "64-true",
+    ])
 
     support_models = list(support_model.keys())
     parser.add_argument(

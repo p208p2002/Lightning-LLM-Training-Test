@@ -9,6 +9,17 @@ LLM硬體負載與吞吐量測試。
 ```bash
 docker run --rm --gpus all p208p2002/llm-training-test -M gpt2 --batch_size 2 --seq_length 512
 ```
+```
+MODEL:gpt2
+MODEL_SIZE:124M
+GPU_COUNT:1
+tokens/sec/GPU:2571.891
+tokens/sec/total:2571.891
+tflop/sec/GPU:6.019
+tflop/sec/total:6.019
+peak_ram:5324MB
+peak_vram_0:4687MB
+```
 
 ## 使用
 ```bash

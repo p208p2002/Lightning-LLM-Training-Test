@@ -6,7 +6,7 @@ LLM硬體負載與吞吐量測試。
 [![asciicast](https://asciinema.org/a/7UHAhWtFangpe6ahMmFxpGli7.svg)](https://asciinema.org/a/7UHAhWtFangpe6ahMmFxpGli7)
 
 ## Docker
-```
+```bash
 docker run --rm --gpus all p208p2002/llm-training-test -M gpt2 --batch_size 2 --seq_length 512
 ```
 

@@ -10,13 +10,6 @@ if __name__ == "__main__":
 
     model = LLM()
     
-    training_checkpoint_callback = ModelCheckpoint(
-        monitor='val_loss',
-        filename='best',
-        save_on_train_epoch_end=False,
-        save_top_k=3,
-    )
-    
     trainer = None
     
     # deepspeed_stage_2_offload

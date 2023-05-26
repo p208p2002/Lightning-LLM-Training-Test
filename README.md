@@ -43,7 +43,7 @@ TFLOP/sec/total:    15.18
 ## 使用
 ### Docker
 ```bash
-docker run --shm-size 8G --rm --gpus all p208p2002/llm-training-test -M gpt2 --batch_size 2 --seq_length 512
+docker run --shm-size 8G --rm --gpus all p208p2002/llm-training-test --model_name gpt2 --batch_size 2 --seq_length 512
 ```
 
 ### Python

@@ -24,7 +24,7 @@ if __name__ == "__main__":
         accelerator="gpu",
         precision=16,
         max_steps=10,
-        strategy=args.ds_strategy,
+        strategy=args.strategy,
         enable_checkpointing=False
     )
     

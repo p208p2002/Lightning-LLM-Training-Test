@@ -12,19 +12,42 @@ import json
 config_args = config.get_args()
 from deepspeed.ops.adam import DeepSpeedCPUAdam as Adam
 from prettytable import PrettyTable
+from usage_logger import RamUsageLogger, VramUsageLogger
+
 
 REPORT_TEMPLATE = """
-args:{args}
-MODEL:{MODEL}
-MODEL_SIZE:{MODEL_SIZE}
-GPU_COUNT:{GPU_COUNT}
-tokens/sec/GPU:{token_gpu}
-tokens/sec/total:{token_total}
-tflop/sec/GPU:{tflops_gpu}
-tflop/sec/total:{tflops_total}
-peak_ram:{peak_ram}
-peak_vram_0:{peak_vram_0}
+:Model
+======================================
+Model name:         {model_name}
+Model size:         {model_size}
+Strategy:           {strategy}
+Batch size:         {batch_size}
+Seq length:         {seq_length}
+
+:Hardware
+======================================
+Number gpus:        {gpu_count}
+--------------------------------------
+
+:Memory
+======================================
+Peak CPU RAM:       {peak_ram}
+Peak GPU RAM:       {peak_vram}
+--------------------------------------
+
+:Token
+======================================
+Tokens/sec/GPU:     {token_gpu}
+Tokens/sec/total:   {token_total}
+--------------------------------------
+
+:TFLOP
+======================================
+TFLOP/sec/GPU:      {tflops_gpu}
+TFLOP/sec/total:    {tflops_total}
+--------------------------------------
 """
+
 
 def count_parameters(model):
     table = PrettyTable(["Modules", "Parameters"])
@@ -40,12 +63,19 @@ def count_parameters(model):
     return total_params
 
 
+def write_report(**kwargs):
+    with open(f"report.txt", "w", encoding="utf-8") as f:
+        # summary
+        report = REPORT_TEMPLATE.format_map(kwargs)
+        f.write(report + "\n")
+
 class LLM(pl.LightningModule):
     report = ""
-    ram_usage = 0
-    vram_0_usage = 0
     device_num = torch.cuda.device_count()
     tokenizer = get_tokenizer()
+
+    ram_logger = RamUsageLogger()
+    vram_logger = VramUsageLogger()
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
@@ -84,25 +114,23 @@ class LLM(pl.LightningModule):
         self.log("tokens/sec/total", token_total, prog_bar=True)
 
         if batch_idx == (10 - 1):
-            # save_prefix = config_args.model_name.replace("/", "_")
-            with open(f"report.txt", "w", encoding="utf-8") as f:
-                # summary
-                self.report = REPORT_TEMPLATE.format_map(
-                    {
-                        "MODEL": config_args.model_name,
-                        "MODEL_SIZE": f"{count_parameters(self.model)//(10**6)}M",
-                        "GPU_COUNT": self.device_num,
-                        "token_gpu": token_gpu,
-                        "token_total": token_total,
-                        "tflops_gpu": tflops_gpu,
-                        "tflops_total": tflops_total,
-                        "peak_ram": f"{self.ram_usage}MB",
-                        "peak_vram_0": f"{self.vram_0_usage}MB",
-                        "args": f"{json.dumps(config_args.__dict__)}",
-                    }
-                )
-                f.write(self.report + "\n")
-                
+            write_report(
+                model_name=config_args.model_name,
+                batch_size=config_args.batch_size,
+                seq_length=config_args.seq_length,
+                strategy=config_args.strategy,
+                model_size=f"{count_parameters(self.model)//(10**6)}M",
+                gpu_count=self.vram_logger.gpu_count,
+                token_gpu=token_gpu,
+                token_total=token_total,
+                tflops_gpu=tflops_gpu,
+                tflops_total=tflops_total,
+                peak_ram=f"{round(self.ram_logger.get()/10**9,1)}GB",
+                peak_vram=", ".join(
+                    [str(round(x / 10**9, 1)) + "GB" for x in self.vram_logger.get()]
+                ),
+            )
+
         return super().on_train_batch_end(outputs, batch, batch_idx)
 
     def on_fit_end(self):
@@ -121,19 +149,10 @@ class LLM(pl.LightningModule):
         self.log("train_loss", loss)
 
         # ram usage
-        ram_usage = psutil.virtual_memory().used // (1024**2)
-        if ram_usage > self.ram_usage:
-            self.ram_usage = ram_usage
+        self.ram_logger.update()
 
         # gpu mem
-        nvidia_smi.nvmlInit()
-
-        handle = nvidia_smi.nvmlDeviceGetHandleByIndex(0)
-        info = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
-        vram_0_usage = info.used // (1024**2)
-        if vram_0_usage > self.vram_0_usage:
-            self.vram_0_usage = vram_0_usage
-        nvidia_smi.nvmlShutdown()
+        self.vram_logger.update()
 
         return loss
 

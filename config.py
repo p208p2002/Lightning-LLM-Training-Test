@@ -29,7 +29,7 @@ support_model = {
 def get_args():
     parser = ArgumentParser()
     parser.add_argument(
-        "--ds_strategy",
+        "--strategy",
         "-s",
         default=DEEPSPEED_STRATEGY_STAGE_2_OFFLOAD,
         choices=[

@@ -24,7 +24,7 @@ peak_vram_0:4687MB
 ## 使用
 ```bash
 usage: main.py [-h]
-               [--ds_strategy {deepspeed_stage_1,deepspeed_stage_2,deepspeed_stage_3,deepspeed_stage_1_offload,deepspeed_stage_2_offload,deepspeed_stage_3_offload}]
+               [--strategy {deepspeed_stage_1,deepspeed_stage_2,deepspeed_stage_3,deepspeed_stage_1_offload,deepspeed_stage_2_offload,deepspeed_stage_3_offload}]
                [--learning_rate LEARNING_RATE] [--batch_size BATCH_SIZE]
                [--seq_length SEQ_LENGTH]
                [--precision {16,32,64,bf-16,16-mixed,bf16-mixed,32-true,64-true}]
@@ -32,7 +32,7 @@ usage: main.py [-h]
 
 options:
   -h, --help            show this help message and exit
-  --ds_strategy {deepspeed_stage_1,deepspeed_stage_2,deepspeed_stage_3,deepspeed_stage_1_offload,deepspeed_stage_2_offload,deepspeed_stage_3_offload}, -s {deepspeed_stage_1,deepspeed_stage_2,deepspeed_stage_3,deepspeed_stage_1_offload,deepspeed_stage_2_offload,deepspeed_stage_3_offload}
+  --strategy {deepspeed_stage_1,deepspeed_stage_2,deepspeed_stage_3,deepspeed_stage_1_offload,deepspeed_stage_2_offload,deepspeed_stage_3_offload}, -s {deepspeed_stage_1,deepspeed_stage_2,deepspeed_stage_3,deepspeed_stage_1_offload,deepspeed_stage_2_offload,deepspeed_stage_3_offload}
   --learning_rate LEARNING_RATE, -lr LEARNING_RATE
   --batch_size BATCH_SIZE, -B BATCH_SIZE
   --seq_length SEQ_LENGTH, -L SEQ_LENGTH

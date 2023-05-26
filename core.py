@@ -2,18 +2,14 @@ import lightning.pytorch as pl
 import torch
 from deepspeed.profiling.flops_profiler import FlopsProfiler
 import time
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 from model.get_instance import get_model, get_tokenizer, get_config
 import config
-import nvidia_smi
-import psutil
-import json
-
 config_args = config.get_args()
 from deepspeed.ops.adam import DeepSpeedCPUAdam as Adam
 from prettytable import PrettyTable
 from usage_logger import RamUsageLogger, VramUsageLogger
-
+import torch.distributed as dist
 
 REPORT_TEMPLATE = """
 :Model
@@ -58,8 +54,6 @@ def count_parameters(model):
         params = parameter.numel()
         table.add_row([name, params])
         total_params += params
-    print(table)
-    print(f"Total Trainable Params: {total_params}")
     return total_params
 
 
@@ -88,53 +82,54 @@ class LLM(pl.LightningModule):
         self.prof = FlopsProfiler(self.model)
 
     def on_train_batch_start(self, batch: Any, batch_idx: int) -> Optional[int]:
-        self._start = time.time()
-        self.prof.start_profile()
+        if dist.get_rank() == 0:
+            self._start = time.time()
+            self.prof.start_profile()
         return super().on_train_batch_start(batch, batch_idx)
 
     def on_train_batch_end(self, outputs, batch: Any, batch_idx: int) -> None:
-        input_ids = batch[0]
-        seq_len = input_ids.shape[-1]
-        batch_size = input_ids.shape[0]
-        token_count = seq_len * batch_size
-        self._end = time.time()
+        if dist.get_rank() == 0:
+            input_ids = batch[0]
+            seq_len = input_ids.shape[-1]
+            batch_size = input_ids.shape[0]
+            token_count = seq_len * batch_size
+            self._end = time.time()
 
-        # flops
-        flops = self.prof.get_total_flops()
-        latency = self.prof.get_total_duration()
-        tflops_gpu = round(flops / latency / (10**12), 3)
-        tflops_total = tflops_gpu * self.device_num
-        self.log("tflop/sec/total", tflops_total, prog_bar=True)
-        self.prof.end_profile()
+            # flops
+            flops = self.prof.get_total_flops()
+            latency = self.prof.get_total_duration()
+            tflops_gpu = round(flops / latency / (10**12), 3)
+            tflops_total = tflops_gpu * self.device_num
+            self.log("tflop/sec/total", tflops_total, prog_bar=True)
+            self.prof.end_profile()
 
-        # tokens
-        step_exec_time = self._end - self._start
-        token_gpu = round(token_count / step_exec_time, 3)
-        token_total = token_gpu * self.device_num
-        self.log("tokens/sec/total", token_total, prog_bar=True)
+            # tokens
+            step_exec_time = self._end - self._start
+            token_gpu = round(token_count / step_exec_time, 3)
+            token_total = token_gpu * self.device_num
+            self.log("tokens/sec/total", token_total, prog_bar=True)
 
-        if batch_idx == (10 - 1):
-            write_report(
-                model_name=config_args.model_name,
-                batch_size=config_args.batch_size,
-                seq_length=config_args.seq_length,
-                strategy=config_args.strategy,
-                model_size=f"{count_parameters(self.model)//(10**6)}M",
-                gpu_count=self.vram_logger.gpu_count,
-                token_gpu=token_gpu,
-                token_total=token_total,
-                tflops_gpu=tflops_gpu,
-                tflops_total=tflops_total,
-                peak_ram=f"{round(self.ram_logger.get()/10**9,1)}GB",
-                peak_vram=", ".join(
-                    [str(round(x / 10**9, 1)) + "GB" for x in self.vram_logger.get()]
-                ),
-            )
+            if batch_idx == (10 - 1):
+                write_report(
+                    model_name=config_args.model_name,
+                    batch_size=config_args.batch_size,
+                    seq_length=config_args.seq_length,
+                    strategy=config_args.strategy,
+                    model_size=f"{count_parameters(self.model)//(10**6)}M",
+                    gpu_count=self.vram_logger.gpu_count,
+                    token_gpu=token_gpu,
+                    token_total=token_total,
+                    tflops_gpu=tflops_gpu,
+                    tflops_total=tflops_total,
+                    peak_ram=f"{round(self.ram_logger.get()/10**9,1)}GB",
+                    peak_vram=", ".join(
+                        [str(round(x / 10**9, 1)) + "GB" for x in self.vram_logger.get()]
+                    ),
+                )
 
         return super().on_train_batch_end(outputs, batch, batch_idx)
-
-    def on_fit_end(self):
-        print(self.report)
+    
+    # def on_be
 
     def training_step(self, batch, batch_idx):
         #
@@ -159,3 +154,4 @@ class LLM(pl.LightningModule):
     def configure_optimizers(self):
         optimizer = Adam(self.parameters(), lr=3e-5)
         return optimizer
+    

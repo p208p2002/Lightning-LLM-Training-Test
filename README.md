@@ -3,25 +3,50 @@ LLM硬體負載與吞吐量測試。
 
 顯存使用量、記憶體使用量、實際算力(FLOP/s)與每秒鐘Token處理量。
 
-[![asciicast](https://asciinema.org/a/7UHAhWtFangpe6ahMmFxpGli7.svg)](https://asciinema.org/a/7UHAhWtFangpe6ahMmFxpGli7)
+## 輸出示例
+以下的結果使用 Tesla T4*4
 
-## Docker
-```bash
-docker run --rm --gpus all p208p2002/llm-training-test -M gpt2 --batch_size 2 --seq_length 512
 ```
+:Model
+======================================
+Model name:         gpt2
+Model size:         124M
+Strategy:           deepspeed_stage_2_offload
+Batch size:         1
+Seq length:         512
+
+:Hardware
+======================================
+Number gpus:        4
+--------------------------------------
+
+:Memory
+======================================
+Peak CPU RAM:       12.7GB
+Peak GPU RAM:       3.8GB, 3.8GB, 3.6GB, 3.6GB
+--------------------------------------
+
+:Token
+======================================
+Tokens/sec/GPU:     1587.348
+Tokens/sec/total:   6349.392
+--------------------------------------
+
+:TFLOP
+======================================
+TFLOP/sec/GPU:      3.795
+TFLOP/sec/total:    15.18
+--------------------------------------
 ```
-MODEL:gpt2
-MODEL_SIZE:124M
-GPU_COUNT:1
-tokens/sec/GPU:2571.891
-tokens/sec/total:2571.891
-tflop/sec/GPU:6.019
-tflop/sec/total:6.019
-peak_ram:5324MB
-peak_vram_0:4687MB
-```
+
 
 ## 使用
+### Docker
+```bash
+docker run --shm-size 8G --rm --gpus all p208p2002/llm-training-test -M gpt2 --batch_size 2 --seq_length 512
+```
+
+### Python
 ```bash
 usage: main.py [-h]
                [--strategy {deepspeed_stage_1,deepspeed_stage_2,deepspeed_stage_3,deepspeed_stage_1_offload,deepspeed_stage_2_offload,deepspeed_stage_3_offload}]

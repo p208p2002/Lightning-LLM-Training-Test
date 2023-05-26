@@ -62,6 +62,7 @@ def write_report(**kwargs):
         # summary
         report = REPORT_TEMPLATE.format_map(kwargs)
         f.write(report + "\n")
+    return report
 
 class LLM(pl.LightningModule):
     report = ""
@@ -110,7 +111,7 @@ class LLM(pl.LightningModule):
             self.log("tokens/sec/total", token_total, prog_bar=True)
 
             if batch_idx == (10 - 1):
-                write_report(
+                self.report = write_report(
                     model_name=config_args.model_name,
                     batch_size=config_args.batch_size,
                     seq_length=config_args.seq_length,
@@ -129,7 +130,10 @@ class LLM(pl.LightningModule):
 
         return super().on_train_batch_end(outputs, batch, batch_idx)
     
-    # def on_be
+    def on_fit_end(self) -> None:
+        if dist.get_rank() == 0:
+            print(self.report)
+        return super().on_fit_end()
 
     def training_step(self, batch, batch_idx):
         #

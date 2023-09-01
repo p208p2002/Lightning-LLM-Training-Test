@@ -55,5 +55,6 @@ def get_args():
     parser.add_argument(
         "--model_name", "-M", choices=support_models, default=support_models[0]
     )
+    parser.add_argument("--use_lora", "-ul",action="store_true")
     args = parser.parse_args()
     return args

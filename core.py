@@ -99,6 +99,8 @@ class LLM(pl.LightningModule):
             # flops
             flops = self.prof.get_total_flops()
             latency = self.prof.get_total_duration()
+            if latency == 0.0:
+                latency = 1e-12
             tflops_gpu = round(flops / latency / (10**12), 3)
             tflops_total = tflops_gpu * self.device_num
             self.log("tflop/sec/total", tflops_total, prog_bar=True)

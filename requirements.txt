@@ -4,3 +4,4 @@ transformers==4.28.1
 prettytable
 nvidia-ml-py3
 psutil
+peft==0.2.0

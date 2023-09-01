@@ -1,5 +1,6 @@
-from transformers import AutoTokenizer,AutoModelForCausalLM,AutoConfig
+from transformers import AutoTokenizer,AutoConfig
 from config import get_args,support_model
+from peft import get_peft_model, LoraConfig, TaskType
 
 args = get_args()
 MODEL_NAME = args.model_name
@@ -9,7 +10,11 @@ def get_config():
     return config
 
 def get_model():
-    return support_model[MODEL_NAME](get_config())
+    model = support_model[MODEL_NAME](get_config())
+    if args.use_lora:
+        peft_config = LoraConfig(task_type=TaskType.CAUSAL_LM, inference_mode=False, r=8, lora_alpha=32, lora_dropout=0.1)
+        model = get_peft_model(model, peft_config)
+    return model
 
 def get_tokenizer():
     if 'tokenizer' not in globals():

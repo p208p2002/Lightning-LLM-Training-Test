@@ -11,7 +11,6 @@ class FooDataModule(pl.LightningDataModule):
         self.batch_size = args.batch_size
         self.train = FooDataset()
 
-
     def train_dataloader(self):
         return DataLoader(self.train, batch_size=self.batch_size)
 

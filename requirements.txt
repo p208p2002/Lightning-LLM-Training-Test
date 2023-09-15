@@ -5,3 +5,4 @@ prettytable
 nvidia-ml-py3
 psutil
 peft==0.2.0
+starlette==0.22.0
